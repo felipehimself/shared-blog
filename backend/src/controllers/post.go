@@ -7,6 +7,7 @@ import (
 	"shared-blog-backend/src/repositories"
 	"shared-blog-backend/src/responses"
 	"shared-blog-backend/src/utils"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -51,7 +52,7 @@ func CreatePost(c *fiber.Ctx) error {
 
 	if err = repo.Create(post); err != nil {
 		return responses.Error(c, fiber.StatusInternalServerError, fiber.Map{
-			"mssage": err.Error(),
+			"message": err.Error(),
 		})
 	}
 
@@ -66,7 +67,7 @@ func GetPosts(c *fiber.Ctx) error {
 
 	if err != nil {
 		return responses.Error(c, fiber.StatusInternalServerError, fiber.Map{
-			"mssage": err.Error(),
+			"message": err.Error(),
 		})
 	}
 
@@ -75,10 +76,81 @@ func GetPosts(c *fiber.Ctx) error {
 
 	if err != nil {
 		return responses.Error(c, fiber.StatusBadRequest, fiber.Map{
-			"mssage": err.Error(),
+			"message": err.Error(),
 		})
 	}
 
 	return responses.SendJSON(c, http.StatusOK, posts)
 
+}
+
+func Vote(c *fiber.Ctx) error {
+
+	params := c.Params("postId")
+
+	postId, err := strconv.ParseUint(params, 10, 64)
+
+	if err != nil {
+		return responses.Error(c, fiber.StatusBadRequest, fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	db, err := database.Connect()
+
+	if err != nil {
+		return responses.Error(c, fiber.StatusInternalServerError, fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	defer db.Close()
+
+	repo := repositories.PostRepository(db)
+
+	if err := repo.Vote(postId); err != nil {
+		return responses.Error(c, fiber.StatusBadRequest, fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	return responses.SendJSON(c, fiber.StatusOK, fiber.Map{
+		"message": "post got one more vote",
+	})
+}
+
+func UnVote(c *fiber.Ctx) error {
+	params := c.Params("postId")
+
+	postId, err := strconv.ParseUint(params, 10, 64)
+
+	if err != nil {
+		return responses.Error(c, fiber.StatusBadRequest, fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	db, err := database.Connect()
+
+	if err != nil {
+		return responses.Error(c, fiber.StatusInternalServerError, fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	defer db.Close()
+
+	repo := repositories.PostRepository(db)
+
+	if err := repo.UnVote(postId); err != nil {
+		return responses.Error(c, fiber.StatusInternalServerError, fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	
+
+	return responses.SendJSON(c, fiber.StatusOK, fiber.Map{
+		"message": "post got one less vote",
+	})
 }
