@@ -26,5 +26,9 @@ func Setup(app *fiber.App) {
 	protectedApi := app.Group("/api/protected", middleware.ProtectedRoute())
 	
 	protectedApi.Post("/post/create-post", controllers.CreatePost)
+	protectedApi.Post("/post/vote/:postId", controllers.Vote)
+	protectedApi.Post("/post/unvote/:postId", controllers.UnVote)
+
+	protectedApi.Get("/topics/get-topics", controllers.GetTopics)
 
 }
