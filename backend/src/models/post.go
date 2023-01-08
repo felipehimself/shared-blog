@@ -7,29 +7,29 @@ import (
 )
 
 type Post struct {
-	Id             uint64    `json:"id,omitempty"`
-	Title          string    `json:"title,omitempty"`
-	Subtitle       string    `json:"subtitle,omitempty"`
-	Author         string    `json:"author,omitempty"`
-	AuthorId       uint64    `json:"authorId,omitempty"`
-	Content        string    `json:"content,omitempty"`
-	VotesNumber    uint64    `json:"votesNumber,omitempty"`
-	CommentsNumber uint64    `json:"commentsNumber,omitempty"`
-	MinutesRead		 uint64			`json:"minutesRead,omitempty"`
-	CreatedAt      time.Time `json:"createdAt,omitempty"`
+	Id          uint64    `json:"id,omitempty"`
+	Username    string    `json:"username,omitempty"`
+	Topic       string    `json:"topic,omitempty"`
+	TopicId     uint64    `json:"topicId,omitempty"`
+	Title       string    `json:"title,omitempty"`
+	Subtitle    string    `json:"subtitle,omitempty"`
+	Author      string    `json:"author,omitempty"`
+	AuthorId    uint64    `json:"authorId,omitempty"`
+	Content     string    `json:"content,omitempty"`
+	Votes       uint64    `json:"votes"`
+	Comments    uint64    `json:"comments"`
+	MinutesRead uint64    `json:"minutesRead,omitempty"`
+	CreatedAt   time.Time `json:"createdAt,omitempty"`
 }
-
-// TODO:
-// INICIALIZAR GIT MAS NA PASTA PRINCIPAL
-// POSTAR IMAGEM?
-// VERIFICAR SE O MODELS E A TABELA DE POST FAZEM SENTIDO OU SE PRECISA AJUSTAR
-// CONTINUAR CONTROLLERS
-// CRIAR REPOSITORIO DE POST
 
 func (p *Post) ValidateFields() error {
 
-	if p.Title == "" && p.Subtitle == "" && p.Content == "" {
+	if p.Title == "" && p.Subtitle == "" && p.Content == "" && p.TopicId == 0 {
 		return errors.New("all fields are required")
+	}
+
+	if p.TopicId == 0 {
+		return errors.New("topic id is required")
 	}
 
 	if p.Title == "" {
