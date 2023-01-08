@@ -27,7 +27,4 @@ go.work
 # env variables
 .env
 
-# sql queries
-*.sql
-
 # End of https://www.toptal.com/developers/gitignore/api/go
