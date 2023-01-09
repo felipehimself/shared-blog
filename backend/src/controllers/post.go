@@ -74,9 +74,7 @@ func GetPosts(c *fiber.Ctx) error {
 	userOnToken,err := utils.IsTokenValid(c)
 	
 	if err != nil {
-		return responses.Error(c, fiber.StatusUnauthorized, fiber.Map{
-			"message": err.Error(),
-		})
+		userOnToken = 0
 	}
 
 	repo := repositories.PostRepository(db)
@@ -93,13 +91,8 @@ func GetPosts(c *fiber.Ctx) error {
 }
 
 func Vote(c *fiber.Ctx) error {
-	userOnToken, err := utils.IsTokenValid(c)
+	userOnToken, _ := utils.IsTokenValid(c)
 
-	if err != nil {
-		return responses.Error(c, fiber.StatusUnauthorized, fiber.Map{
-			"message": err.Error(),
-		}) 
-	}
 	
 	params := c.Params("postId")
 
@@ -137,13 +130,7 @@ func Vote(c *fiber.Ctx) error {
 }
 
 func UnVote(c *fiber.Ctx) error {
-	userOnToken, err := utils.IsTokenValid(c)
-
-	if err != nil {
-		return responses.Error(c, fiber.StatusUnauthorized, fiber.Map{
-			"message": err.Error(),
-		}) 
-	}
+	userOnToken, _ := utils.IsTokenValid(c)
 
 	params := c.Params("postId")
 
