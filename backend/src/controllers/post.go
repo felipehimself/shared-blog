@@ -93,7 +93,14 @@ func GetPosts(c *fiber.Ctx) error {
 }
 
 func Vote(c *fiber.Ctx) error {
+	userOnToken, err := utils.IsTokenValid(c)
 
+	if err != nil {
+		return responses.Error(c, fiber.StatusUnauthorized, fiber.Map{
+			"message": err.Error(),
+		}) 
+	}
+	
 	params := c.Params("postId")
 
 	postId, err := strconv.ParseUint(params, 10, 64)
@@ -116,7 +123,9 @@ func Vote(c *fiber.Ctx) error {
 
 	repo := repositories.PostRepository(db)
 
-	if err := repo.Vote(postId); err != nil {
+	
+
+	if err := repo.Vote(postId, userOnToken); err != nil {
 		return responses.Error(c, fiber.StatusBadRequest, fiber.Map{
 			"message": err.Error(),
 		})
@@ -128,6 +137,14 @@ func Vote(c *fiber.Ctx) error {
 }
 
 func UnVote(c *fiber.Ctx) error {
+	userOnToken, err := utils.IsTokenValid(c)
+
+	if err != nil {
+		return responses.Error(c, fiber.StatusUnauthorized, fiber.Map{
+			"message": err.Error(),
+		}) 
+	}
+
 	params := c.Params("postId")
 
 	postId, err := strconv.ParseUint(params, 10, 64)
@@ -148,9 +165,11 @@ func UnVote(c *fiber.Ctx) error {
 
 	defer db.Close()
 
+	
+
 	repo := repositories.PostRepository(db)
 
-	if err := repo.UnVote(postId); err != nil {
+	if err := repo.UnVote(postId, userOnToken); err != nil {
 		return responses.Error(c, fiber.StatusInternalServerError, fiber.Map{
 			"message": err.Error(),
 		})
