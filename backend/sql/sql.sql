@@ -55,7 +55,6 @@ CREATE TABLE post_comments (
 )
 
 CREATE TABLE post_votes (
-    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     post_id INT NOT NULL,
     FOREIGN KEY (post_id)
         REFERENCES posts (id)
@@ -64,12 +63,12 @@ CREATE TABLE post_votes (
     FOREIGN KEY (user_id)
         REFERENCES users (id)
         ON DELETE CASCADE,
+	PRIMARY KEY(post_id, user_id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 
 select * from posts;
 
-insert into post_votes (post_id) values ()
 
 insert into topics (topic) 
 values 
