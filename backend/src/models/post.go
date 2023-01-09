@@ -17,6 +17,7 @@ type Post struct {
 	AuthorId    uint64    `json:"authorId,omitempty"`
 	Content     string    `json:"content,omitempty"`
 	Votes       uint64    `json:"votes"`
+	Voted       bool    	`json:"voted"`
 	Comments    uint64    `json:"comments"`
 	MinutesRead uint64    `json:"minutesRead,omitempty"`
 	CreatedAt   time.Time `json:"createdAt,omitempty"`
