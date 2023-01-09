@@ -49,32 +49,40 @@ func (p *PostDB) Create(post models.Post) error {
 
 }
 
-func (p *PostDB) GetPosts() ([]models.Post, error) {
+func (p *PostDB) GetPosts(userId uint64) ([]models.Post, error) {
 
 	rows, err := p.db.Query(`
 	SELECT 
-		p.id,
-		u.username,
-		t.topic,
-		p.title,
-		p.subtitle,
-		p.author_id,
-		p.votes,
-    COUNT(pc.comment) as comments,
-		ROUND((CHAR_LENGTH(p.content) / 200)) AS minutes_read,
-		p.created_at
-	FROM
-		posts p
-				INNER JOIN
-		users u ON p.author_id = u.id
-				INNER JOIN
-		post_topics pt ON p.id = pt.post_id
-				INNER JOIN
-		topics t ON t.id = pt.topic_id
-				LEFT JOIN
-		post_comments pc ON pc.post_id = p.id
-				GROUP BY p.id
-	`)
+    p.id,
+    u.username,
+    t.topic,
+    p.title,
+    p.subtitle,
+    p.author_id,
+    COUNT(pc.comment) AS comments,
+    COUNT(pv.id) AS votes,
+
+	CASE WHEN pv.user_id = ?
+		THEN 'true'
+        ELSE 'false'
+	END as voted,
+    ROUND((CHAR_LENGTH(p.content) / 200)) AS minutes_read,
+    p.created_at
+FROM
+    posts p
+        INNER JOIN
+    users u ON p.author_id = u.id
+        INNER JOIN
+    post_topics pt ON p.id = pt.post_id
+        INNER JOIN
+    topics t ON t.id = pt.topic_id
+        LEFT JOIN
+    post_comments pc ON pc.post_id = p.id
+        LEFT JOIN
+    post_votes pv ON p.id = pv.id
+GROUP BY p.id
+
+	`, userId)
 
 	if err != nil {
 		return nil, err
@@ -93,8 +101,9 @@ func (p *PostDB) GetPosts() ([]models.Post, error) {
 			&post.Title,
 			&post.Subtitle,
 			&post.AuthorId,
-			&post.Votes,
 			&post.Comments,
+			&post.Votes,
+			&post.Voted,
 			&post.MinutesRead,
 			&post.CreatedAt); err != nil {
 			return []models.Post{}, err
