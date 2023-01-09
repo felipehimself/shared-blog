@@ -14,7 +14,8 @@ func PostRepository(db *sql.DB) *PostDB {
 }
 
 func (p *PostDB) Create(post models.Post) error {
-
+// TODO:
+// VERIFICAR COMO LIDAR COM O DB.BEGIN ... 
 	statement, err := p.db.Prepare("INSERT INTO posts (title, subtitle, author_id, content) VALUES (?,?,?,?)")
 
 	if err != nil {
@@ -62,7 +63,7 @@ func (p *PostDB) GetPosts() ([]models.Post, error) {
 		p.subtitle,
 		p.author_id,
 		p.votes,
-		p.comments,
+    COUNT(pc.comment) as comments,
 		ROUND((CHAR_LENGTH(p.content) / 200)) AS minutes_read,
 		p.created_at
 	FROM
@@ -73,6 +74,9 @@ func (p *PostDB) GetPosts() ([]models.Post, error) {
 		post_topics pt ON p.id = pt.post_id
 				INNER JOIN
 		topics t ON t.id = pt.topic_id
+				LEFT JOIN
+		post_comments pc ON pc.post_id = p.id
+				GROUP BY p.id
 	`)
 
 	if err != nil {
