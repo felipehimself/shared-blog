@@ -16,8 +16,7 @@ CREATE TABLE posts (
         REFERENCES users (id)
         ON DELETE CASCADE,
     content TEXT NOT NULL,
-    votes_number INT DEFAULT 0,
-    comments_number INT DEFAULT 0,
+    votes INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )  ENGINE=INNODB
 
@@ -41,7 +40,19 @@ CREATE TABLE post_topics (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )  ENGINE=INNODB;
 
-
+CREATE TABLE post_comments (
+    id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    FOREIGN KEY (user_id)
+        REFERENCES users (id)
+        ON DELETE CASCADE,
+	post_id INT NOT NULL,
+    FOREIGN KEY (post_id)
+        REFERENCES posts (id)
+        ON DELETE CASCADE,
+	comment TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
 
 insert into topics (topic) 
 values 
