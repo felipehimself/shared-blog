@@ -54,6 +54,23 @@ CREATE TABLE post_comments (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 
+CREATE TABLE post_votes (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    post_id INT NOT NULL,
+    FOREIGN KEY (post_id)
+        REFERENCES posts (id)
+        ON DELETE CASCADE,
+    user_id INT NOT NULL,
+    FOREIGN KEY (user_id)
+        REFERENCES users (id)
+        ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+
+select * from posts;
+
+insert into post_votes (post_id) values ()
+
 insert into topics (topic) 
 values 
 ("Blockchain"),
