@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"net/http"
 	"shared-blog-backend/src/database"
 	"shared-blog-backend/src/models"
 	"shared-blog-backend/src/repositories"
@@ -50,13 +49,14 @@ func CreatePost(c *fiber.Ctx) error {
 
 	repo := repositories.PostRepository(db)
 
+
 	if err = repo.Create(post); err != nil {
 		return responses.Error(c, fiber.StatusInternalServerError, fiber.Map{
 			"message": err.Error(),
 		})
 	}
 
-	return responses.SendJSON(c, http.StatusCreated, fiber.Map{
+	return responses.SendJSON(c, fiber.StatusCreated, fiber.Map{
 		"message": "post created",
 	})
 }
@@ -80,7 +80,7 @@ func GetPosts(c *fiber.Ctx) error {
 		})
 	}
 
-	return responses.SendJSON(c, http.StatusOK, posts)
+	return responses.SendJSON(c, fiber.StatusOK, posts)
 
 }
 
@@ -147,8 +147,6 @@ func UnVote(c *fiber.Ctx) error {
 			"message": err.Error(),
 		})
 	}
-
-	
 
 	return responses.SendJSON(c, fiber.StatusOK, fiber.Map{
 		"message": "post got one less vote",
