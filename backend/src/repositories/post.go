@@ -14,39 +14,36 @@ func PostRepository(db *sql.DB) *PostDB {
 }
 
 func (p *PostDB) Create(post models.Post) error {
-// TODO:
-// VERIFICAR COMO LIDAR COM O DB.BEGIN ... 
-	statement, err := p.db.Prepare("INSERT INTO posts (title, subtitle, author_id, content) VALUES (?,?,?,?)")
+	
+	ts, err := p.db.Begin()
 
 	if err != nil {
 		return err
 	}
 
-	defer statement.Close()
+	res, err := ts.Exec("INSERT INTO posts (title, subtitle, author_id, content) VALUES (?,?,?,?)",
+		post.Title, post.Subtitle, post.AuthorId, post.Content)
 
-	result, err := statement.Exec(post.Title, post.Subtitle, post.AuthorId, post.Content)
+	if err != nil {
+		ts.Rollback()
+		return err
+	}
+
+	lasId, err := res.LastInsertId()
 
 	if err != nil {
 		return err
 	}
 
-	lasId, err := result.LastInsertId()
-
-	if err != nil {
+	if _, err := ts.Exec("INSERT INTO post_topics (topic_id, post_id) VALUES (?, ?)", post.TopicId, lasId); err != nil {
+		ts.Rollback()
 		return err
 	}
 
-	statement, err = p.db.Prepare("INSERT INTO post_topics (topic_id, post_id) VALUES (?, ?)")
-
-	if err != nil {
+	if err = ts.Commit(); err != nil {
 		return err
 	}
 
-	defer statement.Close()
-
-	if _, err = statement.Exec(post.TopicId, lasId); err != nil {
-		return err
-	}
 
 	return nil
 
