@@ -71,8 +71,16 @@ func GetPosts(c *fiber.Ctx) error {
 		})
 	}
 
+	userOnToken,err := utils.IsTokenValid(c)
+	
+	if err != nil {
+		return responses.Error(c, fiber.StatusUnauthorized, fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
 	repo := repositories.PostRepository(db)
-	posts, err := repo.GetPosts()
+	posts, err := repo.GetPosts(userOnToken)
 
 	if err != nil {
 		return responses.Error(c, fiber.StatusBadRequest, fiber.Map{
