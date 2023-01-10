@@ -49,7 +49,6 @@ func CreatePost(c *fiber.Ctx) error {
 
 	repo := repositories.PostRepository(db)
 
-
 	if err = repo.Create(post); err != nil {
 		return responses.Error(c, fiber.StatusInternalServerError, fiber.Map{
 			"message": err.Error(),
@@ -71,8 +70,8 @@ func GetPosts(c *fiber.Ctx) error {
 		})
 	}
 
-	userOnToken,err := utils.IsTokenValid(c)
-	
+	userOnToken, err := utils.IsTokenValid(c)
+
 	if err != nil {
 		userOnToken = 0
 	}
@@ -93,7 +92,6 @@ func GetPosts(c *fiber.Ctx) error {
 func Vote(c *fiber.Ctx) error {
 	userOnToken, _ := utils.IsTokenValid(c)
 
-	
 	params := c.Params("postId")
 
 	postId, err := strconv.ParseUint(params, 10, 64)
@@ -115,8 +113,6 @@ func Vote(c *fiber.Ctx) error {
 	defer db.Close()
 
 	repo := repositories.PostRepository(db)
-
-	
 
 	if err := repo.Vote(postId, userOnToken); err != nil {
 		return responses.Error(c, fiber.StatusBadRequest, fiber.Map{
@@ -152,12 +148,10 @@ func UnVote(c *fiber.Ctx) error {
 
 	defer db.Close()
 
-	
-
 	repo := repositories.PostRepository(db)
 
 	if err := repo.UnVote(postId, userOnToken); err != nil {
-		return responses.Error(c, fiber.StatusInternalServerError, fiber.Map{
+		return responses.Error(c, fiber.StatusBadRequest, fiber.Map{
 			"message": err.Error(),
 		})
 	}
@@ -165,4 +159,46 @@ func UnVote(c *fiber.Ctx) error {
 	return responses.SendJSON(c, fiber.StatusOK, fiber.Map{
 		"message": "post got one less vote",
 	})
+}
+
+func GetPost(c *fiber.Ctx) error {
+
+	userOnToken, err := utils.IsTokenValid(c)
+
+	if err != nil {
+		userOnToken = 0
+	}
+
+	params := c.Params("postId")
+
+	postId, err := strconv.ParseUint(params, 10,64)
+
+	if err != nil {
+		return responses.Error(c, fiber.StatusBadRequest, fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	db, err := database.Connect()
+
+	if err != nil {
+		return responses.Error(c, fiber.StatusInternalServerError, fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	defer db.Close()
+
+	repo := repositories.PostRepository(db)
+
+	post, err := repo.GetPost(postId, userOnToken)
+
+	if err != nil {
+			return responses.Error(c, fiber.StatusBadRequest, fiber.Map{
+			"message": err.Error(),
+		}) 
+	}
+
+	return responses.SendJSON(c, fiber.StatusOK, post)
+
 }
