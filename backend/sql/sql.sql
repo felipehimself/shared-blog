@@ -67,9 +67,6 @@ CREATE TABLE post_votes (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 
-select * from posts;
-
-
 insert into topics (topic) 
 values 
 ("Blockchain"),
