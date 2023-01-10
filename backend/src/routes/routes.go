@@ -20,6 +20,7 @@ func Setup(app *fiber.App) {
 	publicApi.Post("/user/is-authorized", controllers.IsAuthorized)
 	
 	publicApi.Get("/post/get-posts", controllers.GetPosts)
+	publicApi.Get("/post/get-post/:postId", controllers.GetPost)
 
 
 	// Protected Routes
