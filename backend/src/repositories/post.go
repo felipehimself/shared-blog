@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"database/sql"
+	"errors"
 	"shared-blog-backend/src/models"
 )
 
@@ -14,13 +15,12 @@ func PostRepository(db *sql.DB) *PostDB {
 }
 
 func (p *PostDB) Create(post models.Post) error {
-	
+
 	ts, err := p.db.Begin()
 
 	if err != nil {
 		return err
 	}
-
 
 	res, err := ts.Exec("INSERT INTO posts (title, subtitle, author_id, content) VALUES (?,?,?,?)",
 		post.Title, post.Subtitle, post.AuthorId, post.Content)
@@ -44,7 +44,6 @@ func (p *PostDB) Create(post models.Post) error {
 	if err = ts.Commit(); err != nil {
 		return err
 	}
-
 
 	return nil
 
@@ -143,10 +142,89 @@ func (p *PostDB) UnVote(postId, userId uint64) error {
 	}
 
 	defer statement.Close()
-	if _, err := statement.Exec(postId , userId); err != nil {
+
+	res, err := statement.Exec(postId, userId);
+	
+	if  err != nil {
 		return err
+	}
+
+	rowsAffected, err := res.RowsAffected() 
+
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("you already unvoted this post")
 	}
 
 	return nil
 
+}
+
+func (p *PostDB) GetPost(postId, userId uint64) (models.Post, error) {
+
+	row, err := p.db.Query(`
+	SELECT 
+    p.id,
+    u.username,
+    t.topic,
+    p.title,
+    p.subtitle,
+		p.content,
+    p.author_id,
+    COUNT(pc.comment) AS comments,
+    COUNT(pv.post_id) AS votes,
+			CASE WHEN (SELECT post_id from post_votes pvts WHERE pvts.user_id = ? AND pvts.post_id = pv.post_id)
+				THEN 'true'
+						ELSE 'false'
+			END AS voted,
+				ROUND((CHAR_LENGTH(p.content) / 200)) AS minutes_read,
+				p.created_at
+	FROM
+    posts p
+        INNER JOIN
+    users u ON p.author_id = u.id
+        INNER JOIN
+    post_topics pt ON p.id = pt.post_id
+        INNER JOIN
+    topics t ON t.id = pt.topic_id
+        LEFT JOIN
+    post_comments pc ON pc.post_id = p.id
+        LEFT JOIN
+    post_votes pv ON p.id = pv.post_id
+		WHERE p.id = ?
+GROUP BY p.id
+	
+	`, userId, postId)
+
+	if err != nil {
+		return models.Post{}, err
+	}
+
+	defer row.Close()
+
+	var post models.Post
+
+	if row.Next() {
+		if err := row.Scan(
+			&post.Id,
+			&post.Username,
+			&post.Topic,
+			&post.Title,
+			&post.Subtitle,
+			&post.Content,
+			&post.AuthorId,
+			&post.Comments,
+			&post.Votes,
+			&post.Voted,
+			&post.MinutesRead,
+			&post.CreatedAt); err != nil {
+			return models.Post{}, err
+
+		}
+	}
+
+	return post, nil
 }
