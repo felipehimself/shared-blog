@@ -171,7 +171,7 @@ func GetPost(c *fiber.Ctx) error {
 
 	params := c.Params("postId")
 
-	postId, err := strconv.ParseUint(params, 10,64)
+	postId, err := strconv.ParseUint(params, 10, 64)
 
 	if err != nil {
 		return responses.Error(c, fiber.StatusBadRequest, fiber.Map{
@@ -194,11 +194,93 @@ func GetPost(c *fiber.Ctx) error {
 	post, err := repo.GetPost(postId, userOnToken)
 
 	if err != nil {
-			return responses.Error(c, fiber.StatusBadRequest, fiber.Map{
+		return responses.Error(c, fiber.StatusBadRequest, fiber.Map{
 			"message": err.Error(),
-		}) 
+		})
 	}
 
 	return responses.SendJSON(c, fiber.StatusOK, post)
+
+}
+
+func GetUserPosts(c *fiber.Ctx) error {
+
+	username := c.Params("username")
+
+	db, err := database.Connect()
+
+	if err != nil {
+		return responses.Error(c, fiber.StatusInternalServerError, fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	defer db.Close()
+
+	repo := repositories.PostRepository(db)
+
+	posts, err := repo.GetUserPosts(username)
+
+	if err != nil {
+		if err != nil {
+			return responses.Error(c, fiber.StatusInternalServerError, fiber.Map{
+				"message": err.Error(),
+			})
+		}
+	}
+
+	return responses.SendJSON(c, fiber.StatusOK, posts)
+}
+
+func EditPost(c *fiber.Ctx) error {
+
+	var post models.Post
+
+	if err := c.BodyParser(&post); err != nil {
+		return responses.Error(c, fiber.StatusUnprocessableEntity, fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	if err := post.ValidateFields(); err != nil {
+		return responses.Error(c, fiber.StatusUnprocessableEntity, fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	params := c.Params("postId")
+	postId, err := strconv.ParseUint(params, 10, 64)
+
+	if err != nil {
+		return responses.Error(c, fiber.StatusBadRequest, fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	userOnToken, _ := utils.IsTokenValid(c)
+
+	db, err := database.Connect()
+
+	if err != nil {
+		return responses.Error(c, fiber.StatusInternalServerError, fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	defer db.Close()
+
+	repo := repositories.PostRepository(db)
+
+	status, err := repo.EditPost(postId, userOnToken, post)
+
+	if err != nil {
+		return responses.Error(c, status, fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	return responses.SendJSON(c, status, fiber.Map{
+		"message": "success",
+	})
 
 }
