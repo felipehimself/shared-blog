@@ -21,6 +21,7 @@ func Setup(app *fiber.App) {
 	
 	publicApi.Get("/post/get-posts", controllers.GetPosts)
 	publicApi.Get("/post/get-post/:postId", controllers.GetPost)
+	publicApi.Get("/post/get-user-posts/:username", controllers.GetUserPosts)
 
 
 	// Protected Routes
@@ -29,6 +30,7 @@ func Setup(app *fiber.App) {
 	protectedApi.Post("/post/create-post", controllers.CreatePost)
 	protectedApi.Post("/post/vote/:postId", controllers.Vote)
 	protectedApi.Post("/post/unvote/:postId", controllers.UnVote)
+	protectedApi.Put("/post/edit-post/:postId", controllers.EditPost)
 
 	protectedApi.Get("/topics/get-topics", controllers.GetTopics)
 
