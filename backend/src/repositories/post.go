@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"shared-blog-backend/src/models"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 type PostDB struct {
@@ -55,6 +57,7 @@ func (p *PostDB) GetPosts(userId uint64) ([]models.Post, error) {
 	SELECT 
     p.id,
     u.username,
+		u.name,
     t.topic,
     p.title,
     p.subtitle,
@@ -98,6 +101,7 @@ GROUP BY p.id
 		if err := rows.Scan(
 			&post.Id,
 			&post.Username,
+			&post.Author,
 			&post.Topic,
 			&post.Title,
 			&post.Subtitle,
@@ -143,20 +147,20 @@ func (p *PostDB) UnVote(postId, userId uint64) error {
 
 	defer statement.Close()
 
-	res, err := statement.Exec(postId, userId);
-	
-	if  err != nil {
+	res, err := statement.Exec(postId, userId)
+
+	if err != nil {
 		return err
 	}
 
-	rowsAffected, err := res.RowsAffected() 
+	rowsAffected, err := res.RowsAffected()
 
 	if err != nil {
 		return err
 	}
 
 	if rowsAffected == 0 {
-		return errors.New("you already unvoted this post")
+		return errors.New("this post doesn't exist")
 	}
 
 	return nil
@@ -165,10 +169,11 @@ func (p *PostDB) UnVote(postId, userId uint64) error {
 
 func (p *PostDB) GetPost(postId, userId uint64) (models.Post, error) {
 
-	row, err := p.db.Query(`
+	row := p.db.QueryRow(`
 	SELECT 
     p.id,
     u.username,
+		u.name,
     t.topic,
     p.title,
     p.subtitle,
@@ -199,32 +204,109 @@ GROUP BY p.id
 	
 	`, userId, postId)
 
-	if err != nil {
-		return models.Post{}, err
-	}
-
-	defer row.Close()
-
 	var post models.Post
 
-	if row.Next() {
-		if err := row.Scan(
-			&post.Id,
-			&post.Username,
-			&post.Topic,
-			&post.Title,
-			&post.Subtitle,
-			&post.Content,
-			&post.AuthorId,
-			&post.Comments,
-			&post.Votes,
-			&post.Voted,
-			&post.MinutesRead,
-			&post.CreatedAt); err != nil {
-			return models.Post{}, err
+	if err := row.Scan(
+		&post.Id,
+		&post.Username,
+		&post.Author,
+		&post.Topic,
+		&post.Title,
+		&post.Subtitle,
+		&post.Content,
+		&post.AuthorId,
+		&post.Comments,
+		&post.Votes,
+		&post.Voted,
+		&post.MinutesRead,
+		&post.CreatedAt); err != nil {
+		return models.Post{}, err
 
-		}
 	}
 
 	return post, nil
+}
+
+func (p *PostDB) GetUserPosts(username string) ([]models.Post, error) {
+
+	rows, err := p.db.Query(`
+	SELECT 
+		p.id as post_id, p.title, p.subtitle, p.created_at, u.name, u.username
+	FROM
+		posts p
+			INNER JOIN
+				users u ON u.id = p.author_id
+	WHERE u.username = ?
+	`, username)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var posts []models.Post
+
+	for rows.Next() {
+		var post models.Post
+		if err = rows.Scan(&post.Id, &post.Title, &post.Subtitle, &post.CreatedAt, &post.Author, &post.Username); err != nil {
+			return nil, err
+		}
+
+		posts = append(posts, post)
+	}
+
+	return posts, nil
+
+}
+
+func (p *PostDB) EditPost(postId, userOnToken uint64, post models.Post) (int, error) {
+
+	row := p.db.QueryRow("SELECT author_id FROM posts WHERE id = ?", postId)
+
+	var author models.User
+
+	if err := row.Scan(&author.ID); err != nil {
+		return fiber.StatusBadRequest, err
+	}
+
+	if author.ID != userOnToken {
+		return fiber.StatusUnauthorized, errors.New("you cannot edit a post from another user")
+	}
+
+	ts, err := p.db.Begin()
+
+	if err != nil {
+		ts.Rollback()
+		return fiber.StatusInternalServerError, err
+	}
+
+	statement, err := ts.Prepare(`UPDATE posts SET title = ?, subtitle = ?, content = ?  WHERE id = ?`)
+
+	if err != nil {
+		ts.Rollback()
+		return fiber.StatusInternalServerError, err
+	}
+
+	if _, err := statement.Exec(post.Title, post.Subtitle, post.Content, postId); err != nil {
+		ts.Rollback()
+		return fiber.StatusInternalServerError, err
+	}
+
+	statement, err = ts.Prepare("UPDATE post_topics SET topic_id = ? WHERE post_id = ?")
+
+	if err != nil {
+		ts.Rollback()
+		return fiber.StatusInternalServerError, err
+	}
+
+	if _, err := statement.Exec(post.TopicId, postId); err != nil {
+		ts.Rollback()
+		return fiber.StatusInternalServerError, err
+	}
+
+	if err = ts.Commit(); err != nil {
+		return fiber.StatusInternalServerError, nil
+	}
+
+	return fiber.StatusOK, nil
+
 }
