@@ -24,6 +24,7 @@ type Post struct {
 }
 
 func (p *Post) ValidateFields() error {
+	p.cleanWhiteSpaces()
 
 	if p.Title == "" && p.Subtitle == "" && p.Content == "" && p.TopicId == 0 {
 		return errors.New("all fields are required")
@@ -45,7 +46,6 @@ func (p *Post) ValidateFields() error {
 		return errors.New("content is required")
 	}
 
-	p.cleanWhiteSpaces()
 
 	return nil
 
