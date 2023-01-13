@@ -29,7 +29,7 @@ func CreatePost(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := post.ValidateFields(); err != nil {
+	if err := post.ValidatePostFields(); err != nil {
 		return responses.Error(c, fiber.StatusUnprocessableEntity, fiber.Map{
 			"message": err.Error(),
 		})
@@ -242,7 +242,7 @@ func EditPost(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := post.ValidateFields(); err != nil {
+	if err := post.ValidatePostFields(); err != nil {
 		return responses.Error(c, fiber.StatusUnprocessableEntity, fiber.Map{
 			"message": err.Error(),
 		})
@@ -283,4 +283,43 @@ func EditPost(c *fiber.Ctx) error {
 		"message": "success",
 	})
 
+}
+
+func DeletePost(c *fiber.Ctx) error {
+
+	params := c.Params("postId")
+
+	postId, err := strconv.ParseUint(params, 10, 64)
+
+	if err != nil {
+		return responses.Error(c, fiber.StatusBadRequest, fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	userOnToken, _ := utils.IsTokenValid(c)
+
+	db, err := database.Connect()
+
+	if err != nil {
+		return responses.Error(c, fiber.StatusInternalServerError, fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	defer db.Close()
+
+	repo := repositories.PostRepository(db)
+
+	status, err := repo.DeletePost(postId, userOnToken)
+
+	if err != nil {
+		return responses.Error(c, status, fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	return responses.SendJSON(c, status, fiber.Map{
+		"message": "success",
+	})
 }
