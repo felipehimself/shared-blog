@@ -31,6 +31,9 @@ func Setup(app *fiber.App) {
 	protectedApi.Post("/post/vote/:postId", controllers.Vote)
 	protectedApi.Post("/post/unvote/:postId", controllers.UnVote)
 	protectedApi.Put("/post/edit-post/:postId", controllers.EditPost)
+	protectedApi.Delete("/post/delete-post/:postId", controllers.DeletePost)
+	protectedApi.Post("/comment/comment-post", controllers.CommentPost)
+	protectedApi.Delete("/comment/delete-comment/:commentId", controllers.DeleteComment)
 
 	protectedApi.Get("/topics/get-topics", controllers.GetTopics)
 
