@@ -70,20 +70,39 @@ func (p *PostDB) GetPosts(userId uint64) ([]models.Post, error) {
 	SELECT 
     p.id,
     u.username,
-		u.name,
+    u.name,
     t.topic,
     p.title,
     p.subtitle,
     p.author_id,
-    COUNT(pc.comment) AS comments,
-    COUNT(pv.post_id) AS votes,
-			CASE WHEN (SELECT post_id from post_votes pvts WHERE pvts.user_id = ? AND pvts.post_id = pv.post_id)
-				THEN 'true'
-						ELSE 'false'
-			END AS voted,
-				ROUND((CHAR_LENGTH(p.content) / 200)) AS minutes_read,
-				p.created_at
-	FROM
+    (SELECT 
+            COUNT(pcc.comment)
+        FROM
+            post_comments pcc
+        WHERE
+            pcc.post_id = p.id) AS comments,
+    (SELECT 
+            COUNT(pvv.post_id)
+        FROM
+            post_votes pvv
+        WHERE
+            pvv.post_id = p.id) AS votes,
+    CASE
+        WHEN
+            (SELECT 
+                    post_id
+                FROM
+                    post_votes pvts
+                WHERE
+                    pvts.user_id = ?
+                        AND pvts.post_id = pv.post_id)
+        THEN
+            'true'
+        ELSE 'false'
+    END AS voted,
+    ROUND((CHAR_LENGTH(p.content) / 200)) AS minutes_read,
+    p.created_at
+FROM
     posts p
         INNER JOIN
     users u ON p.author_id = u.id
@@ -96,7 +115,6 @@ func (p *PostDB) GetPosts(userId uint64) ([]models.Post, error) {
         LEFT JOIN
     post_votes pv ON p.id = pv.post_id
 GROUP BY p.id
-
 	`, userId)
 
 	if err != nil {
@@ -192,8 +210,18 @@ func (p *PostDB) GetPost(postId, userId uint64) (models.Post, error) {
     p.subtitle,
 		p.content,
     p.author_id,
-    COUNT(pc.comment) AS comments,
-    COUNT(pv.post_id) AS votes,
+    (SELECT 
+			COUNT(pcc.comment)
+				FROM
+			post_comments pcc
+				WHERE
+			pcc.post_id = p.id) AS comments,
+		(SELECT 
+			COUNT(pvv.post_id)
+				FROM
+			post_votes pvv
+				WHERE
+			pvv.post_id = p.id) AS votes,
 			CASE WHEN (SELECT post_id from post_votes pvts WHERE pvts.user_id = ? AND pvts.post_id = pv.post_id)
 				THEN 'true'
 						ELSE 'false'
@@ -236,6 +264,40 @@ GROUP BY p.id
 		return models.Post{}, err
 
 	}
+
+	rows, err := p.db.Query(`
+	SELECT 
+		pc.id AS comment_id,
+		u.id AS user_id,
+		u.username,
+		u.name,
+		pc.comment,
+		pc.created_at
+	FROM
+		post_comments pc
+				INNER JOIN
+		users u ON u.id = pc.user_id
+	WHERE
+	pc.post_id = ?`, postId)
+
+	if err != nil {
+		return models.Post{}, err
+	}
+
+	var comments []models.Comment
+
+	for rows.Next() {
+
+		var comment models.Comment
+
+		if err = rows.Scan(&comment.Id, &comment.UserId, &comment.Username, &comment.Name, &comment.Comment, &comment.CreatedAt); err != nil {
+			return models.Post{}, nil
+		}
+
+		comments = append(comments, comment)
+	}
+
+	post.CommentsContent = comments
 
 	return post, nil
 }
@@ -323,3 +385,33 @@ func (p *PostDB) EditPost(postId, userOnToken uint64, post models.Post) (int, er
 	return fiber.StatusOK, nil
 
 }
+
+func (p *PostDB) DeletePost(postId, userOnToken uint64) (int, error) {
+
+	res := p.db.QueryRow("SELECT p.author_id FROM posts p WHERE p.id = ?", postId)
+
+	var post models.Post
+
+	if err := res.Scan(&post.AuthorId); err != nil {
+		return fiber.StatusInternalServerError, err
+	}
+
+	if post.AuthorId != userOnToken {
+		return fiber.StatusForbidden, errors.New("you cannot delete a post from other user")
+	}
+
+	statement, err := p.db.Prepare("DELETE FROM posts WHERE id = ?")
+
+	if err != nil {
+		return fiber.StatusInternalServerError, err
+
+	}
+
+	if _, err = statement.Exec(postId); err != nil {
+		return fiber.StatusInternalServerError, err
+	}
+
+	return fiber.StatusOK, nil
+}
+
+
