@@ -7,23 +7,24 @@ import (
 )
 
 type Post struct {
-	Id          uint64    `json:"id,omitempty"`
-	Username    string    `json:"username,omitempty"`
-	Topic       string    `json:"topic,omitempty"`
-	TopicId     uint64    `json:"topicId,omitempty"`
-	Title       string    `json:"title,omitempty"`
-	Subtitle    string    `json:"subtitle,omitempty"`
-	Author      string    `json:"author,omitempty"`
-	AuthorId    uint64    `json:"authorId,omitempty"`
-	Content     string    `json:"content,omitempty"`
-	Votes       uint64    `json:"votes"`
-	Voted       bool    	`json:"voted"`
-	Comments    uint64    `json:"comments"`
-	MinutesRead uint64    `json:"minutesRead,omitempty"`
-	CreatedAt   time.Time `json:"createdAt,omitempty"`
+	Id              uint64 `json:"id,omitempty"`
+	Username        string `json:"username,omitempty"`
+	Topic           string `json:"topic,omitempty"`
+	TopicId         uint64 `json:"topicId,omitempty"`
+	Title           string `json:"title,omitempty"`
+	Subtitle        string `json:"subtitle,omitempty"`
+	Author          string `json:"author,omitempty"`
+	AuthorId        uint64 `json:"authorId,omitempty"`
+	Content         string `json:"content,omitempty"`
+	Votes           uint64 `json:"votes"`
+	Voted           bool   `json:"voted"`
+	Comments        uint64 `json:"comments"`
+	MinutesRead     uint64 `json:"minutesRead,omitempty"`
+	CommentsContent []Comment `json:"commentsContent,omitempty"`
+	CreatedAt       time.Time `json:"createdAt,omitempty"`
 }
 
-func (p *Post) ValidateFields() error {
+func (p *Post) ValidatePostFields() error {
 	p.cleanWhiteSpaces()
 
 	if p.Title == "" && p.Subtitle == "" && p.Content == "" && p.TopicId == 0 {
@@ -45,7 +46,6 @@ func (p *Post) ValidateFields() error {
 	if p.Content == "" {
 		return errors.New("content is required")
 	}
-
 
 	return nil
 
